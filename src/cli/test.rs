@@ -67,7 +67,7 @@ where
 {
     let style = ProgressStyle::with_template("{spinner:.bold.cyan} {wide_msg}")
         .unwrap()
-        .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏");
+        .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏ ");
 
     let bar = ProgressBar::new_spinner()
         .with_style(style)
