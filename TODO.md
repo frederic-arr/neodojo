@@ -1,0 +1,21 @@
+- [ ] Handle absence of Dojo directory
+- [ ] Filter tests
+- [ ] Commit reminders
+- [ ] Better error handling
+- [ ] Nicer help
+- [x] Completion
+- [ ] Man pages
+- [ ] Better documentation
+- [ ] Installer
+    - [ ] Packaging the application
+- [ ] CI/CD
+- [ ] Tests
+- [ ] `--verbose`/`--quiet` to control verbosity
+- [ ] `--raw` to directly run the entrypoint
+- [ ] `--watch` to watch for changes
+- [ ] `login` to login to GitLab
+- [ ] `logout` to logout from GitLab
+- [ ] `new` to start a new exercise
+- [ ] `-U` to upgrade the CLI
+    - [ ] periodically check for upgrades
+    - [ ] `-c` to check for upgrade only
