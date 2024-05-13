@@ -6,7 +6,7 @@ use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use serde_sarif::sarif::Sarif;
 use std::io::{BufRead, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Output;
 use std::time::Duration;
 
@@ -19,6 +19,9 @@ const DOJO_ASSIGNMENT_FILE: &str = "dojo_assignment.json";
 enum RunError {
     // #[error("unable to run docker-compose")]
     // DockerCompose,
+    #[error("invalid dojo workspace: {0}")]
+    DojoWorkspace(PathBuf),
+
     #[error("error building the project")]
     Build(#[from] BuildError),
 
@@ -55,6 +58,7 @@ pub fn command(root: &Path) {
                     test.pretty_print();
                 }
             }
+            _ => {}
         }
 
         println!("{}{} {}", "error".red().bold(), ":".bold(), err);
@@ -91,7 +95,12 @@ where
     res
 }
 
-fn run(root: &str, container_name: &str) -> Result<(), RunError> {
+fn run(root: &Path) -> Result<(), RunError> {
+    let assignment = DojoAssignment::try_from_file(&root.join(DOJO_ASSIGNMENT_FILE))
+        .map_err(|_| RunError::DojoWorkspace(root.to_path_buf()))?;
+    assert_ne!(assignment.result.volume, None);
+    let container_name = assignment.result.container.as_str();
+
     let tempdir = tempfile::tempdir().unwrap().into_path();
     let overrides = create_docker_compose_file(tempdir.to_str().unwrap(), container_name);
     let args = vec![
@@ -152,7 +161,7 @@ fn create_docker_compose_file(dir: &str, container_name: &str) -> String {
 }
 
 fn exec_run(
-    root: &str,
+    root: &Path,
     container_name: &str,
     common_args: &[&str],
 ) -> Result<Output, std::io::Error> {
@@ -168,7 +177,7 @@ fn exec_run(
 }
 
 fn exec_clean(
-    root: &str,
+    root: &Path,
     container_name: &str,
     common_args: &[&str],
 ) -> Result<Output, std::io::Error> {
@@ -186,17 +195,19 @@ fn exec_clean(
 }
 
 fn exec_build(
-    root: &str,
+    root: &Path,
     container_name: &str,
     common_args: &[&str],
 ) -> Result<BuildDiagnostic, BuildError> {
-    let makefile = std::fs::read_to_string(format!("{root}/src/Makefile")).unwrap();
+    let makefile = std::fs::read_to_string(root.join("src/Makefile"))
+        .map_err(|_| BuildError::IncompatibleMakefile("unable to read Makefile".to_string()))?;
+
     let (_, cflags) = makefile
         .lines()
         .find(|line| line.starts_with("CFLAGS:="))
-        .unwrap()
+        .ok_or(BuildError::IncompatibleMakefile("missing CFLAGS".to_string()))?
         .split_once('=')
-        .unwrap();
+        .ok_or(BuildError::IncompatibleMakefile("missing CFLAGS".to_string()))?;
 
     let build = std::process::Command::new("docker")
         .args(common_args)
@@ -229,7 +240,7 @@ fn exec_build(
 }
 
 fn exec_test(
-    root: &str,
+    root: &Path,
     container_name: &str,
     common_args: &[&str],
     results: &Path,

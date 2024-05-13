@@ -1,4 +1,4 @@
-- [ ] Handle absence of Dojo directory
+- [x] Handle absence of Dojo directory
 - [ ] Filter tests
 - [ ] Commit reminders
 - [ ] Better error handling
@@ -6,6 +6,7 @@
 - [x] Completion
 - [ ] Man pages
 - [ ] Better documentation
+- [ ] Optimize container usage
 - [ ] Installer
     - [ ] Packaging the application
 - [ ] CI/CD
