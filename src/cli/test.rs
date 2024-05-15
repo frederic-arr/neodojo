@@ -31,20 +31,16 @@ enum RunError {
 
 #[derive(Debug, thiserror::Error)]
 pub enum BuildError {
+    #[error("incorrect makefile format: {0}")]
+    IncompatibleMakefile(String),
+
     #[error("build failed")]
     BuildFailed(BuildDiagnostic),
 }
 
-pub fn command(root: &Path) {
-    let context_root = root;
-    let assignment =
-        DojoAssignment::try_from_file(&context_root.join(DOJO_ASSIGNMENT_FILE)).unwrap();
-    assert_ne!(assignment.result.volume, None);
-
-    if let Err(err) = run(
-        context_root.to_str().unwrap(),
-        assignment.result.container.as_str(),
-    ) {
+pub fn command(root: &Path, filter: &Vec<String>) {
+    // dbg!(&filter);
+    if let Err(err) = run(root) {
         match &err {
             RunError::Build(b) =>
             {
@@ -260,7 +256,10 @@ fn exec_test(
     let asan = Asan::try_from_file(&results.with_file_name(ASAN_FILE));
     let gunit = UnitTest::try_from_file(results);
     match (gunit, asan) {
-        (Ok(mut gunit), Ok(asan))
+        (Ok(mut gunit), Ok(asan)) => {
+            gunit.add_suite(asan);
+            Ok(gunit)
+        },
         | (Ok(mut gunit), Err(asan))
         | (Err(TestError::TestFailed(mut gunit)), Ok(asan))
         | (Err(TestError::TestFailed(mut gunit)), Err(asan)) => {
