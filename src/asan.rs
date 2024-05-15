@@ -6,10 +6,15 @@ pub struct Asan;
 
 impl Asan {
     pub fn try_from_file(path: &Path) -> Result<TestCase, TestCase> {
-        let file = std::fs::read_to_string(path).unwrap();
+        let file = std::fs::read_to_string(path);
         let mut suite = TestCase {
             name: "sanitizer".to_string(),
             ..Default::default()
+        };
+
+        let file = match file {
+            Ok(file) => file,
+            Err(_) => return Ok(suite),
         };
 
         for (key, name) in [
