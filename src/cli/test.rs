@@ -39,25 +39,30 @@ pub enum BuildError {
 }
 
 pub fn command(root: &Path, filter: &Vec<String>) {
-    // dbg!(&filter);
-    if let Err(err) = run(root) {
-        match &err {
-            RunError::Build(b) =>
-            {
-                #[allow(irrefutable_let_patterns)]
-                if let BuildError::BuildFailed(diagnostics) = b {
-                    diagnostics.pretty_print();
+    let result = run(root);
+    match result {
+        Ok(test) => {
+            test.pretty_print();
+        },
+        Err(err) => {
+            match &err {
+                RunError::Build(b) =>
+                {
+                    #[allow(irrefutable_let_patterns)]
+                    if let BuildError::BuildFailed(diagnostics) = b {
+                        diagnostics.pretty_print();
+                    }
                 }
-            }
-            RunError::Test(t) => {
-                if let TestError::TestFailed(test) = t {
-                    test.pretty_print();
+                RunError::Test(t) => {
+                    if let TestError::TestFailed(test) = t {
+                        test.pretty_print();
+                    }
                 }
+                _ => {}
             }
-            _ => {}
+        
+            println!("{}{} {}", "error".red().bold(), ":".bold(), err);
         }
-
-        println!("{}{} {}", "error".red().bold(), ":".bold(), err);
     }
 }
 
@@ -91,7 +96,7 @@ where
     res
 }
 
-fn run(root: &Path) -> Result<(), RunError> {
+fn run(root: &Path) -> Result<UnitTest, RunError> {
     let assignment = DojoAssignment::try_from_file(&root.join(DOJO_ASSIGNMENT_FILE))
         .map_err(|_| RunError::DojoWorkspace(root.to_path_buf()))?;
     assert_ne!(assignment.result.volume, None);
@@ -129,9 +134,7 @@ fn run(root: &Path) -> Result<(), RunError> {
             &tempdir.join(TEST_RESULTS_FILE),
         )
     })
-    .map_err(RunError::from)?;
-
-    Ok(())
+    .map_err(RunError::from)
 }
 
 fn create_docker_compose_file(dir: &str, container_name: &str) -> String {
